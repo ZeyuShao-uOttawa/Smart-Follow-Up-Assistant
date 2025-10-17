@@ -1,0 +1,30 @@
+## Configuration
+To run this app locally, first create a python virtual environment using <br>
+`python3.11 -m venv venv`
+
+Then enter the virtual environment <br>
+`venv\Scripts\activate`
+
+Install the dependencies in the virtual environment <br>
+`pip install -r requirements.txt`
+
+Create a environment variables file called `.env` including the following information:
+```
+OPENAI_API_KEY=
+GOOGLE_SA_JSON_PATH=  // This should be the path to youre google cloud json credentials
+SHEET_ID=
+OPENAI_MODEL=gpt-5-nano
+```
+
+Run the app using <br>
+`streamlit run app.py`
+
+To deactivate the virtual environment <br>
+`venv\Scripts\deactivate.bat`
+
+## Docker
+To build a docker container of the project run <br>
+`docker build -t smart-followup .`
+
+Run the container using <br>
+`docker run -p 8501:8501 --env-file .env smart-followup`

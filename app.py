@@ -1,18 +1,18 @@
 import os
+import json
 import streamlit as st
+import traceback
 import pandas as pd
 from agent import parse_message
-from googleSheetService import append_followup_row
+from googleSheetService import append_followup_row, get_sheet, append_followup_scheduler_row
 from dotenv import load_dotenv
-
-# venv\Scripts\activate
 
 # Load environment variables
 load_dotenv()
 
 st.set_page_config(page_title="Smart Follow-Up Assistant", layout="wide")
 
-st.title("Smart Follow-Up Assistant — Streamlit Demo")
+st.title("Smart Follow-Up Assistant — Demo")
 
 with st.sidebar:
     st.header("Settings")
@@ -31,7 +31,6 @@ if input_mode == "Paste messages":
 else:
     uploaded = st.file_uploader("Upload JSON file", type=["json"])
     if uploaded is not None:
-        import json
         messages = json.load(uploaded)
         if not isinstance(messages, list):
             st.error("JSON must be an array of message strings.")
@@ -42,23 +41,26 @@ if st.button("Analyze"):
         st.warning("No messages found.")
     else:
         results = []
-        for m in messages:
+        workSheet = get_sheet(sheet_id, "Log")
+        schedulerWorkSheet = get_sheet(sheet_id, "Scheduler")
+        for message in messages:
             try:
-                obj = parse_message(m)
+                obj = parse_message(message)
             except Exception as e:
                 st.error(f"Error parsing message: {e}")
                 continue
             results.append(obj)
             if save_to_sheets and sheet_id:
                 try:
-                    append_followup_row(sheet_id, obj)
+                    append_followup_row(obj, workSheet)
+                    append_followup_scheduler_row(obj.get('action'), obj.get('followup_date'), schedulerWorkSheet)
                 except Exception as e:
-                    st.error(f"Error saving to sheet: {e}")
+                    st.error(f"Error saving to sheet: {traceback.format_exc()}")
 
         df = pd.DataFrame(results)
         st.subheader("Detected follow-ups")
         st.dataframe(df)
 
         # Show summary
-        follow_ups = [r for r in results if r.get("follow_up_required", False)]
+        follow_ups = [r for r in results if r.get("status", "follow-up needed")]
         st.success(f"{len(follow_ups)} follow-up(s) detected.")
